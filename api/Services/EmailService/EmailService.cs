@@ -27,7 +27,7 @@ namespace api.Services.EmailService
                 var client = new SendGridClient(config.Value.ApiKey);
                 var msg = new SendGridMessage()
                 {
-                    From = new EmailAddress("collins.okafor@eChithub.com", subject),
+                    From = new EmailAddress(config.Value.FromEmail, subject),
                     Subject = subject,
                     PlainTextContent = message,
                     HtmlContent = message,
