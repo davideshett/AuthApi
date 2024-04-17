@@ -1,0 +1,9 @@
+services:
+  authapi:
+    image: davideshett/auth:02.04.24.01
+    container_name: 'authapi'
+    restart: always
+    ports:
+      - 4000:80
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
