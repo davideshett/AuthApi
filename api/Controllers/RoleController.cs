@@ -28,7 +28,7 @@ namespace api.Controllers
             this.roleManager = roleManager;
         }
         [HttpPost]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddRole (AddRoleDto model)
         {
             if(!ModelState.IsValid)
@@ -108,7 +108,7 @@ namespace api.Controllers
         }
 
         [HttpPut("update/{id}")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateRole(int id, AddRoleDto model)
         {
             var role = await roleRepository.GetAsync(id);
@@ -134,7 +134,7 @@ namespace api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteRole(int id)
         {
             var data = await roleRepository.GetAsync(id);

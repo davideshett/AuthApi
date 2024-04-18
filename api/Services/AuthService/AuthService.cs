@@ -186,7 +186,7 @@ namespace api.Services.AuthService
 
         public async Task<GenericResponse> UpdateUserPassword(string userName, string currentPassword, string newPassword)
         {
-            var user = await userManager.Users.FirstOrDefaultAsync(x => x.UserName == userName);
+            var user = await userManager.FindByEmailAsync(userName);
             if (user == null)
             {
                 return new GenericResponse

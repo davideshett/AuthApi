@@ -44,6 +44,7 @@ namespace api.Services.TokenService
                 new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new (JwtRegisteredClaimNames.Email, user.Email),
                 new ("uid", user.Id.ToString()),
+                new ("fullname", $"{user.FirstName} {user.LastName}"),
             }
             .Union(userClaims).Union(roleClaims);
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using api.Dto.Auth;
 using api.Dto.UserDto;
@@ -9,6 +10,7 @@ using api.Services.AuthService;
 using api.Services.EmailService;
 using api.Services.TokenService;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -22,10 +24,12 @@ namespace api.Controllers
         private readonly UserManager<AppUser> userManager;
         private readonly IEmailService emailService;
         private readonly SignInManager<AppUser> signInManager;
+        private readonly IConfiguration config;
 
         public AuthController(IAuthService authService,
         ITokenService tokenService, ILogger<AuthController> logger,
-        UserManager<AppUser> userManager, IEmailService emailService,SignInManager<AppUser> signInManager)
+        UserManager<AppUser> userManager, IEmailService emailService,
+        SignInManager<AppUser> signInManager, IConfiguration config)
         {
             this.authService = authService;
             this.tokenService = tokenService;
@@ -33,6 +37,7 @@ namespace api.Controllers
             this.userManager = userManager;
             this.emailService = emailService;
             this.signInManager = signInManager;
+            this.config = config;
         }
 
         [HttpPost("register")]
@@ -88,17 +93,19 @@ namespace api.Controllers
         }
 
         [HttpPost("emailconfirmation/{TokenGuid}")]
+        [AllowAnonymous]
         public async Task<IActionResult> ConfirmEmail(string TokenGuid, [FromBody] OtpDto model)
         {
             var data = await authService.ConfirmEmail(TokenGuid, model.Otp);
             return Ok(data);
         }
 
-        [AllowAnonymous]
+        [Authorize]
         [HttpPost("changePassword")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
         {
-            var dataFromRepo = await authService.UpdateUserPassword(model.UserName, model.CurrentPassword, model.NewPassword);
+            var userName = HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            var dataFromRepo = await authService.UpdateUserPassword(userName, model.CurrentPassword, model.NewPassword);
             return Ok(dataFromRepo);
         }
 
@@ -156,41 +163,34 @@ namespace api.Controllers
                 });
             }
 
+            if(user.EmailConfirmed)
+            {
+                return BadRequest(new {
+                    Message = "Email confirmed already",
+                    IsSuccessful = false,
+                    StatusCode = StatusCode(400)
+                });
+            }
+
             var code = new Random().Next(111111,999999).ToString();
 
             user.TempOtp = code;
+            user.TokenGuid = Guid.NewGuid().ToString();
             await userManager.UpdateAsync(user);
 
-            var htmlMessage = $"<p>Hello {user.FirstName},<br>CODE: {code}<br> Follow the link to confirm email. http://localhost:5165/api/auth/emailconfirmation/{user.TokenGuid}</p>";
-            var result = emailService.SendEmail(user.Email, "AUTH OTP", $"CODE: {htmlMessage}");
-            
-            return Ok();
+            var htmlMessage = $"<p>Hello {user.FirstName},<br>CODE: {code}<br> Follow the link to confirm email. http://localhost:3000/auth-test/confirm-email/{user.TokenGuid}</p>";
+            var data = await emailService.SendEmail(user.Email, "AUTH OTP", $"CODE: {htmlMessage}");
+
+            return Ok(data);
         }
 
         [Authorize]
         [Route("logout")]
         [HttpGet]
-        public async Task<IActionResult> Logout()
+        public async Task<ActionResult> Logout()
         {
-            try
-            {
-                await signInManager.SignOutAsync();
-            }
-            catch (System.InvalidOperationException ex)
-            {
-                 // TODO
-                 return Ok(new {
-                    Message = ex.Message
-                 });
-            }
-           
-            
-            return Ok(new
-            {
-                Message = "Success",
-                IsSuccessful = true,
-                StatusCode = 204
-            });
+            await signInManager.SignOutAsync();
+            return Ok();
         }
 
 

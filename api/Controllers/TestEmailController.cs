@@ -1,4 +1,5 @@
 using api.Services.EmailService;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,12 +17,12 @@ public class TestEmailController : BaseController
    
 
     [HttpPost("sendemail")]
-
-    public  IActionResult SendEmail([FromBody] EmailObject model)
+    [Authorize(Roles = "Admin")]
+    public  async Task<IActionResult> SendEmail([FromBody] EmailObject model)
     {
-        var rrr = "<!DOCTYPE html><html><p>Hello Dave,<br>CODE:<body><main><h3> 123456</h3></main></body></html>";
-        var data = emailService.SendEmail(model.ToEmail, "AUTH OTP", rrr);
-        return Ok();
+        var message = "Hello, this is a test email";
+        var data = await emailService.SendEmail(model.ToEmail, "TEST", message);
+        return Ok(data);
     }
 
     public class EmailObject

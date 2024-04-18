@@ -115,6 +115,7 @@ namespace api.Controllers
         }
 
         [HttpDelete("delete/{email}")]
+        [AllowAnonymous]
         public async Task<IActionResult> DeleteUsers(string email)
         {
             var dataFromRepo = await userRepository.DeleteUser(email);
